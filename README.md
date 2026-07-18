@@ -17,6 +17,8 @@ current one. More memory makes the agent worse.
 
 ## What Majordomo does differently
 
+![Majordomo architecture — governed memory write path and hybrid recall read path](docs/architecture.svg)
+
 Every remembered fact goes through a **governance pipeline** (Qwen-powered):
 
 ```
@@ -50,7 +52,8 @@ Eleanor Voss   naive     accuracy by stay: [1.0, 1.0, 0.8]   <- recalls stale pr
 - **Qwen Cloud** — `qwen3.7-plus` (agent + extraction), `qwen3.7-max` (judge),
   `text-embedding-v4` (1024-dim memory embeddings), via the OpenAI-compatible
   endpoint over plain `httpx`
-- **Alibaba Cloud** — deployment target (see `deploy/`)
+- **Alibaba Cloud** — inference runs on **Model Studio (DashScope)**; the
+  backend deploys to **Function Compute** (see [Alibaba Cloud usage](#alibaba-cloud-usage))
 - SQLite memory ledger (swaps to ApsaraDB RDS in deployment) — nothing is
   deleted; superseded memories remain auditable with reasons
 
@@ -81,6 +84,26 @@ python -m pytest tests -q
 Covers the three governance paths (store / dedupe-reinforce /
 contradiction-supersede), recall ranking, and the harness invariant that
 governed memory beats append-only after a preference change.
+
+## Alibaba Cloud usage
+
+Majordomo uses Alibaba Cloud two independent ways — either one satisfies the
+hackathon's "code file demonstrating use of Alibaba Cloud services and APIs":
+
+1. **Inference — Alibaba Cloud Model Studio (DashScope).** Every chat,
+   contradiction-judge, and embedding call runs on Qwen models served by
+   Model Studio at `dashscope-intl.aliyuncs.com`.
+   → Proof file: [`src/majordomo/llm.py`](src/majordomo/llm.py) (`QwenClient`).
+2. **Deployment — Alibaba Cloud Function Compute.** The governed-memory engine
+   is deployed as an FC web function (Singapore / `ap-southeast-1`) with a
+   public HTTP endpoint.
+   → Proof files: [`fc/index.py`](fc/index.py), [`fc/s.yaml`](fc/s.yaml).
+
+**Live endpoint:** `https://<function-url>/health` → returns the FC-injected
+Alibaba Cloud region + identity. `POST /chat` runs a real governed-memory turn.
+
+Deploy: `npm i -g @serverless-devs/s` → `cd fc && s deploy` (region must be an
+international one — a China-mainland region forces ~3-day real-name verification).
 
 ## License
 

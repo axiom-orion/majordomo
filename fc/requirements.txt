@@ -1,0 +1,4 @@
+# FC deploy deps. Majordomo itself (httpx, python-dotenv) is installed from the
+# bundled repo; these add only the HTTP surface for the Function Compute web function.
+fastapi>=0.110
+uvicorn>=0.29

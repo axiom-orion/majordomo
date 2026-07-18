@@ -1,0 +1,38 @@
+edition: 3.0.0
+name: majordomo-fc
+access: default
+
+# Serverless Devs config for deploying Majordomo to Alibaba Cloud Function
+# Compute as a web function. Deploy with:  cd fc && s deploy
+#
+# ⚠️ REGION MUST BE SINGAPORE (ap-southeast-1) OR ANOTHER INTERNATIONAL REGION.
+#    A China-mainland region triggers mandatory real-name verification
+#    (~3 business days) — a guaranteed deadline-killer.
+
+resources:
+  majordomo:
+    component: fc3
+    props:
+      region: ap-southeast-1            # Singapore — avoids China real-name verification
+      functionName: majordomo
+      runtime: custom.debian10          # custom runtime = web function
+      handler: index.handler
+      timeout: 120
+      memorySize: 512
+      code: ../                         # bundle the whole repo so `majordomo` imports
+      environmentVariables:
+        LLM_BACKEND: qwen               # real Alibaba Cloud Model Studio inference
+        QWEN_API_KEY: ${env(QWEN_API_KEY)}
+        QWEN_BASE_URL: https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+        MAJORDOMO_DB: /tmp/majordomo.db # FC writable dir (ephemeral, fine for demo)
+      customRuntimeConfig:
+        command:
+          - python3
+          - fc/index.py
+        port: 9000
+      triggers:
+        - triggerName: http
+          triggerType: http
+          triggerConfig:
+            authType: anonymous         # public URL a judge can hit
+            methods: [GET, POST]
