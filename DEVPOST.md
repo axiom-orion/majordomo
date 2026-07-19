@@ -68,7 +68,7 @@ zero API cost, in CI) and the same behavior is verified live on Qwen.
   Proof files: `fc/index.py`, `fc/s.yaml`. Live `/health` + `/chat`.
 
 ## Repository
-`https://github.com/<org>/majordomo` — public, **Apache-2.0** (LICENSE at root).
+`https://github.com/axiom-orion/majordomo` — public, **Apache-2.0** (LICENSE at root).
 
 ## Disclosure of pre-existing work (Devpost rule compliance)
 Built new during the submission period (repo initialized Jul 13, 2026). It

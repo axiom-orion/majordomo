@@ -91,5 +91,5 @@ supersession happening live. But the core claim is already the whole point:
 **an assistant whose memory improves with experience instead of decaying under
 it.**
 
-*Code: `github.com/<org>/majordomo` (Apache-2.0). Built new for this hackathon;
+*Code: `github.com/axiom-orion/majordomo` (Apache-2.0). Built new for this hackathon;
 reuses eval-harness and mock-backend patterns from my earlier NexusVenue project.*
