@@ -5,51 +5,56 @@
 ---
 
 ## Project name
-**Majordomo — the concierge that never forgets**
+**Majordomo — the memory agent that forgets with receipts**
 
 ## Tagline (one line)
-A guest-service agent with **governed** persistent memory — it dedupes, detects contradictions, and supersedes stale preferences with provenance, then *proves* its recall gets more accurate across sessions.
+Persistent memory that doesn't just remember — it retires the preferences you've changed, keeps them auditable with a recorded reason, and keeps recall clean so every decision runs on current facts.
 
-## Elevator pitch (≈ the "what & why" box)
-Naive memory agents append everything and retrieve by similarity, so over many
-sessions their store fills with duplicates and contradicted facts and recall
-quality *degrades with experience* — the guest who switched from cappuccino to
-matcha keeps getting cappuccino, because three stale memories outvote one
-current one. **More memory makes the agent worse.**
+## Elevator pitch
+The MemoryAgent track asks for *"efficient memory storage and retrieval, timely
+forgetting of outdated information, and recalling critical memories within
+limited context windows."* Most memory agents do the opposite: they append
+everything and retrieve by similarity, so their store fills with duplicates and
+**contradicted** facts. Ask the concierge for your morning drink after you
+switched from cappuccino to matcha, and an append-only agent is still carrying
+two stale "cappuccino" memories into every decision.
 
-Majordomo governs the memory lifecycle instead of just growing it. Every
-remembered fact runs a Qwen-powered pipeline — **extract → dedupe/reinforce →
-contradiction-supersede → hybrid recall** — and the claim is *measured, not
-asserted*: a built-in eval runs returning-guest personas through Majordomo and
-an append-only baseline, quizzing each with a Qwen judge after every stay.
-**When a guest changes a preference mid-history, the baseline's accuracy drops
-to 0.8 while Majordomo holds 1.0.**
+Majordomo governs the memory lifecycle instead of just growing it — **extract →
+dedupe/reinforce → contradiction-supersede → hybrid recall** — all Qwen-powered.
+And it proves the behavior honestly:
 
-## The problem
-Memory is the difference between an assistant and a stranger who reintroduces
-itself every session. But "remember everything" is a trap: unbounded append
-turns recall into a popularity contest between stale and current facts.
-Governance — knowing what to reinforce, retire, and supersede — is the actual
-hard part, and it's where hackathon memory agents are weakest.
+> **Verified live on Qwen** (guest switches cappuccino → matcha):
+> Majordomo surfaces **0** stale memories into recall and carries **7** active rows.
+> The append-only baseline surfaces **2** contradicted "cappuccino" memories and carries **14**.
+
+An honest finding we lead with: a capable model *answers* correctly either way —
+so we don't claim a fake accuracy win. The real, measurable difference is
+**recall hygiene**: the append-only agent decides on a store full of
+contradictions with no audit trail; Majordomo retires the stale fact with a
+recorded reason and keeps the limited recall window clean.
 
 ## How it works
-1. **EXTRACT** — Qwen (`qwen3.7-plus`, JSON mode) distills atomic, durable
-   guest facts from the transcript; transient chatter is dropped.
-2. **DEDUPE** — embedding similarity ≥ 0.90 → reinforce the existing memory
-   instead of storing a duplicate (reinforcement later boosts recall).
-3. **SUPERSEDE** — same topic, changed fact (gray-zone similarity) → a Qwen
-   contradiction check (`qwen3.7-max` as judge). *"always coffee"* and *"never
-   coffee"* embed nearly identically, so even near-duplicates get judged.
-   Contradicted memories are **retired with provenance** — kept for audit,
-   excluded from recall, reason recorded. Nothing is silently deleted.
-4. **RECALL** — hybrid score = `cosine × importance × recency × reinforcement`
-   → the memories that are relevant, current, *and* repeatedly confirmed.
+1. **EXTRACT** — `qwen3.7-plus` (JSON mode) distills atomic, durable guest facts.
+2. **DEDUPE** — similarity ≥ 0.90 → reinforce the existing memory, don't duplicate.
+3. **SUPERSEDE** — same topic, changed fact → `qwen3.7-max` judges contradiction
+   (*"always coffee"* and *"never coffee"* embed nearly identically, so even
+   near-duplicates get judged). The stale memory is **retired with provenance** —
+   kept for audit, excluded from recall, reason recorded.
+4. **RECALL** — hybrid score = `cosine × importance × recency × reinforcement`.
 
-## Why it's different (the recurring differentiator)
-Every entry ships a **measurable eval**, not a demo anecdote. `majordomo eval`
-runs scripted personas through governed and append-only memory and plots the
-governed-vs-naive accuracy curve. Judges almost never see quantified
-self-evaluation — here it's the headline.
+## It also accumulates experience, not just preferences
+The `policy_learning` path lets Majordomo learn a **standing rule from a one-off
+incident** — a guest complains about a 6am wake-up call, and the agent forms and
+applies a "never call before 9am" policy on later stays. That's the track's
+*"autonomously accumulates experience → increasingly accurate decisions across
+sessions"* — and our coverage metric rises stay over stay as it learns.
+
+## Why it's different (the differentiator judges rarely see)
+Every entry ships a **measurable eval**, run honestly. `majordomo eval` reports
+stale-memory-in-recall (timely forgetting), active store size (efficient
+storage), and coverage accuracy (increasingly accurate) — governed vs
+append-only, across sessions. It runs deterministically offline (mock backend,
+zero API cost, in CI) and the same behavior is verified live on Qwen.
 
 ## Built with
 `Qwen Cloud` · `qwen3.7-plus` · `qwen3.7-max` · `text-embedding-v4` ·
@@ -58,33 +63,27 @@ self-evaluation — here it's the headline.
 
 ## Alibaba Cloud / Qwen usage (proof)
 - **Inference on Alibaba Cloud Model Studio (DashScope):** all chat, judge, and
-  embedding calls hit `dashscope-intl.aliyuncs.com`. Proof file:
-  `src/majordomo/llm.py` (`QwenClient`).
-- **Deployed on Alibaba Cloud Function Compute** (Singapore, `ap-southeast-1`)
-  as a web function with a public endpoint. Proof files: `fc/index.py`,
-  `fc/s.yaml`. Live: `GET /health` returns the FC region + identity; `POST
-  /chat` runs a real governed-memory turn.
+  embedding calls hit `dashscope-intl.aliyuncs.com`. Proof file: `src/majordomo/llm.py`.
+- **Deployed on Alibaba Cloud Function Compute** (Singapore, `ap-southeast-1`).
+  Proof files: `fc/index.py`, `fc/s.yaml`. Live `/health` + `/chat`.
 
 ## Repository
 `https://github.com/<org>/majordomo` — public, **Apache-2.0** (LICENSE at root).
 
 ## Disclosure of pre-existing work (Devpost rule compliance)
-Majordomo was **built new during the submission period** (repo initialized Jul
-13, 2026). It re-implements two architectural patterns the author developed in
-his own earlier Apache-2.0 project, **NexusVenue**: (1) an LLM-as-judge
-evaluation harness and (2) a deterministic offline "mock" backend for testing
-without API keys. **No code was copied verbatim** — the patterns were rebuilt
-for the memory-governance domain. All third-party libraries are open-source and
-credited.
+Built new during the submission period (repo initialized Jul 13, 2026). It
+re-implements two patterns from the author's earlier Apache-2.0 project
+**NexusVenue** — an LLM-as-judge eval harness and a deterministic offline mock
+backend — rebuilt for the memory-governance domain. **No code copied verbatim.**
 
 ## What's next
-ApsaraDB RDS for the memory ledger (SQLite today), multi-tenant guest
-isolation, and a live reinforcement dashboard.
+ApsaraDB RDS for the ledger (SQLite today), multi-tenant guest isolation, a live
+reinforcement/supersession dashboard.
 
 ---
 
-### Judging-rubric self-check (innovation 30 / tech 30 / value 25 / presentation 15)
-- **Innovation:** governance (supersede-with-provenance) instead of append-only memory; contradiction detection on near-identical embeddings.
-- **Technical depth:** 4-stage governed pipeline, hybrid recall scoring, dual-backend (real Qwen / deterministic mock), FC deployment, eval harness with a Qwen judge.
-- **Value:** memory that *improves* with use is the unlock for any long-lived assistant; hotel concierge is the demo, the engine is domain-agnostic.
-- **Presentation:** one quantified headline (1.0 vs 0.8), arch diagram, <3-min video, live endpoint.
+### Judging-rubric self-check (Technical 30 / Innovation 30 / Value 25 / Presentation 15)
+- **Technical depth:** governed 4-stage pipeline, contradiction detection on near-identical embeddings, hybrid recall, dual backend (real Qwen / deterministic mock), honest eval harness with a Qwen judge.
+- **Innovation:** governance with a provenance/audit trail — "forgetting with receipts" — not append-and-hope.
+- **Value:** memory that forgets cleanly is the unlock for any long-lived assistant; hotel concierge is the demo, the engine is domain-agnostic.
+- **Presentation:** one verified headline (0 vs 2 stale in recall; 7 vs 14 rows), architecture diagram, <3-min video, live endpoint.

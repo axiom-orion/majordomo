@@ -36,20 +36,38 @@ ever influences recall:
 4. **Recall** — hybrid score = `cosine × importance × recency × reinforcement`,
    so what surfaces is relevant, current, *and* repeatedly confirmed.
 
-## Prove it, don't claim it
+## Prove it — and be honest when the number surprises you
 
-The part I'm proudest of isn't a feature — it's the eval. `majordomo eval` runs
-scripted returning-guest personas through two agents: Majordomo, and an
-append-only baseline that skips governance. After every simulated stay, a Qwen
-judge quizzes each on what it should know. The result is a curve, not a vibe:
+The part I'm proudest of isn't a feature — it's the eval, and what it taught me.
+I *expected* a clean accuracy win: governed memory answers right, append-only
+gets confused by stale facts and drops to 0.8. That's what my offline mock
+predicted. Then I ran it on real Qwen.
+
+Both agents scored a perfect 1.0.
+
+A capable model, handed a recall window with *both* "cappuccino" and "matcha" in
+it, just… picks matcha. It reasons past the contradiction. My headline metric
+evaporated. I could have kept the mock's flattering number and shipped it. I
+didn't — that's fabricated evidence, and the whole point of this project is that
+you should measure what's real.
+
+So I measured what *actually* differs, and it turned out to be a better story.
+It's not the answer — it's the **recall**:
 
 ```
-governed  accuracy by stay: [1.0, 1.0, 1.0]
-naive     accuracy by stay: [1.0, 1.0, 0.8]   <- recalls the superseded preference
+Verified live on Qwen — after the guest switches cappuccino → matcha:
+  Majordomo (governed)   0 stale memories in recall,   7 active rows
+  Append-only baseline   2 contradicted "cappuccino"   14 active rows
+                         memories still in recall
 ```
 
-The two agents are identical until a guest *changes their mind* — and that's
-exactly where governance earns its keep.
+The append-only agent gets the answer right *today*, but it's making every
+decision on a store nearly twice as large, full of contradictions, with no audit
+trail — one weaker model or one ambiguous query away from serving the wrong
+coffee. Majordomo retires the stale fact *with a recorded reason* and keeps the
+window clean. That's "timely forgetting of outdated information" and "recalling
+critical memories within limited context windows" — the exact things the
+MemoryAgent track asks you to demonstrate — and it's true, not tuned.
 
 ## Running on Qwen Cloud and Alibaba Cloud
 

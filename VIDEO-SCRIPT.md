@@ -1,70 +1,79 @@
 # Majordomo — demo video script
 
-**Hard limit: < 3:00 (2:59 max — 3:00 is a violation).** Target **2:40** to leave
-margin. Public video. 60/40 explain-to-demo. Name the sponsor tech on screen.
-One quantified metric. Show the architecture diagram. Record in a clean terminal
-+ the arch diagram; no third-party trademarks on screen.
+**Hard limit: < 3:00 (target 2:45).** Public video. Name Qwen Cloud + Alibaba
+Cloud on screen. Show the architecture diagram. Show one verified metric. No
+third-party trademarks (Grand Meridian + fictional guests only).
 
-Timecodes below sum to ~2:40. Read at a calm pace; cut dead air in editing.
+> Token note: the live demo run below costs real Qwen tokens. Record it **once**
+> with `demo --persist`; everything else (chart, provenance ledger) is already
+> generated and costs nothing to show.
 
 ---
 
-### [0:00–0:20] Hook + what it is  *(overview in first 20s — required)*
-> "Most memory agents get *worse* the more they remember. They append everything,
-> retrieve by similarity — so stale facts outvote current ones. This is
-> **Majordomo**: a concierge agent with *governed* memory, running on **Qwen Cloud**
-> and **Alibaba Cloud**. It doesn't just store what you tell it — it dedupes,
-> catches contradictions, and retires stale preferences, and it **proves** its
-> recall gets more accurate over time."
+### [0:00–0:20] Hook + what it is  *(overview in first 20s)*
+> "Most memory agents get *worse* the more they remember — they append
+> everything and retrieve by similarity, so stale, contradicted facts pile up.
+> This is **Majordomo**: a concierge agent on **Qwen Cloud** and **Alibaba
+> Cloud** that doesn't just remember — it **forgets on purpose, and keeps the
+> receipts.** When you change a preference, it retires the old one, with a
+> recorded reason, and keeps its recall clean."
 
-*On screen:* title card "Majordomo — the concierge that never forgets" + the
-Qwen Cloud / Alibaba Cloud logos or names.
+*On screen:* title card "Majordomo — the memory agent that forgets with receipts" + Qwen Cloud / Alibaba Cloud names.
 
 ### [0:20–0:50] The problem, concretely
-> "A guest tells the hotel: *I drink cappuccino.* Three stays later: *I've
-> switched to matcha.* A naive agent now holds three cappuccino memories and one
-> matcha — so it recommends cappuccino. More memory, worse answer."
+> "A guest says: *I drink cappuccino.* Two stays later: *I've switched to
+> matcha.* An append-only agent now carries both — and every morning it's
+> deciding your coffee off a memory full of contradictions."
 
-*On screen:* two-column "naive vs governed" text, or the memory ledger filling up.
+*On screen:* the ledger filling with duplicate/stale rows.
 
-### [0:50–1:30] How it works  *(show the diagram)*
-> "Every fact runs a Qwen-powered pipeline. **Extract** — qwen3.7-plus pulls
-> atomic, durable facts. **Dedupe** — if we've heard it, we reinforce, not
-> duplicate. **Supersede** — same topic, changed fact: qwen3.7-max judges whether
-> it's a contradiction. *Always coffee* and *never coffee* embed almost
-> identically — so even near-duplicates get judged. The stale memory is
-> **retired with provenance** — kept for audit, dropped from recall. Then recall
-> is hybrid: similarity times importance, recency, and reinforcement."
+### [0:50–1:25] How it works  *(show the diagram)*
+> "Every fact runs a Qwen pipeline. **Extract** — qwen3.7-plus pulls atomic
+> facts. **Dedupe** — heard it before, reinforce, don't duplicate. **Supersede**
+> — same topic, changed fact: qwen3.7-max judges the contradiction. *Always
+> coffee* and *never coffee* embed almost identically, so even near-duplicates
+> get judged. The stale memory is **retired with provenance** — kept for audit,
+> dropped from recall. Then recall is hybrid: similarity × importance × recency
+> × reinforcement."
 
-*On screen:* `docs/architecture.svg` — walk the boxes as you say them.
+*On screen:* `docs/architecture.svg`.
 
-### [1:30–2:10] Live demo  *(the real payoff)*
-> "Watch it happen." *(run `majordomo demo`)* — "Guest switches from cappuccino
-> to matcha. Majordomo detects the contradiction, supersedes the old preference
-> with a recorded reason…" *(run `majordomo memory --guest ...`)* — "…here's the
-> ledger: active memories, and the superseded one with *why*. Nothing is
-> silently deleted."
+### [1:25–2:00] Live demo — real Qwen  *(`majordomo demo --persist`)*
+> "Live, on Qwen. Three stays. The guest switches from cappuccino to matcha —
+> watch Majordomo detect the contradiction and supersede the old preference."
 
-*On screen:* real terminal. Keep it snappy; pre-seed state so no waiting on API.
+*On screen:* real terminal, the `superseded: 'cappuccino' -> 'matcha'` line in yellow.
 
-### [2:10–2:40] The proof + close  *(the metric — required)*
-> "And we don't just claim it — we measure it." *(run/show `majordomo eval` +
-> the accuracy chart)* — "Same personas, governed memory versus append-only.
-> When the guest changes a preference, the naive baseline drops to **0.8**.
-> Majordomo holds **1.0**. Memory that improves with experience — deployed on
-> Alibaba Cloud Function Compute, judged by Qwen. That's Majordomo."
+### [2:00–2:25] The receipts  *(`majordomo memory --guest g-voss`)*
+> "Here's what 'with receipts' means. The ledger shows the retired cappuccino
+> memory — marked superseded, with the reason and the session it happened in.
+> Nothing is silently deleted; forgetting is *auditable.* And it doesn't only
+> remember preferences — from a single 6am-wake-up complaint it forms a standing
+> *never call before 9am* policy and applies it next stay. It accumulates
+> experience."
 
-*On screen:* `data/accuracy_curve.png` (1.0 vs 0.8), then the live `/health`
-endpoint showing the Alibaba Cloud region. End card: repo URL + Apache-2.0.
+*On screen:* the `memory` ledger output — the SUPERSEDED row with its reason.
+
+### [2:25–2:50] The honest proof + close
+> "We measured it, honestly. A capable model answers right either way — so we
+> *don't* claim a fake accuracy win. What we prove is recall hygiene: verified
+> live on Qwen, after the switch the append-only agent surfaces **two**
+> contradicted cappuccino memories into recall and carries **14** rows.
+> Majordomo surfaces **zero**, and carries **7**. Timely forgetting, clean
+> limited-context recall — deployed on Alibaba Cloud Function Compute. That's
+> Majordomo."
+
+*On screen:* `data/accuracy_curve.png` (green flat at 0, red rising; store size diverging), then the live `/health` endpoint showing the Alibaba Cloud region. End card: repo URL + Apache-2.0.
 
 ---
 
 ## Recording checklist
-- [ ] Terminal font large enough to read at 720p; light-on-dark, high contrast.
-- [ ] Pre-seed the demo guest so no live API latency mid-take (space takes to avoid 429s).
-- [ ] Qwen Cloud + Alibaba Cloud named/shown on screen at least once (they are — 0:00 and 2:40).
-- [ ] Architecture diagram shown (1:30 block).
-- [ ] Exactly one quantified metric spoken (1.0 vs 0.8).
-- [ ] Total runtime < 3:00 — check the export twice.
-- [ ] No third-party trademarks visible (use the Grand Meridian / fictional guests only).
-- [ ] Upload public (YouTube unlisted is NOT public enough for some rules — use public).
+- [ ] Terminal font large, high contrast; readable at 720p.
+- [ ] `majordomo demo --persist` recorded ONCE (real Qwen — the only token spend). Space takes to avoid 429s; retry/backoff now absorbs slow calls.
+- [ ] Then `majordomo memory --guest g-voss` for the provenance ledger (free — reads the db).
+- [ ] Qwen Cloud + Alibaba Cloud named/shown (0:00 and 2:50). ✅
+- [ ] Architecture diagram shown (0:50). ✅
+- [ ] One verified metric spoken: 0 vs 2 stale in recall; 7 vs 14 rows. ✅
+- [ ] Chart shown is `accuracy_curve.png`, titled "deterministic offline harness" — honest about backend. ✅
+- [ ] Total < 3:00 — check the export twice.
+- [ ] Upload **public** (not just unlisted).

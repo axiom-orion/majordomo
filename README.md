@@ -37,15 +37,29 @@ conversation transcript
 grounded concierge response
 ```
 
-And the claim is **measured, not asserted**: `majordomo eval` runs scripted
-returning-guest personas through both Majordomo and an append-only baseline,
-quizzing each after every stay with a Qwen judge. When a guest changes a
-preference mid-history, the baseline's accuracy drops — Majordomo's holds.
+And the claim is **measured, not asserted — and measured honestly.**
+`majordomo eval` runs returning-guest personas through Majordomo and an
+append-only baseline, probing recall after every stay with a Qwen judge. A
+finding worth stating plainly: a capable model answers *known* facts correctly
+either way, so raw answer-accuracy does **not** separate the two. What separates
+them is **recall hygiene** — exactly the track's ask (*timely forgetting of
+outdated information; recalling critical memories within limited context
+windows*):
 
 ```
-Eleanor Voss   governed  accuracy by stay: [1.0, 1.0, 1.0]
-Eleanor Voss   naive     accuracy by stay: [1.0, 1.0, 0.8]   <- recalls stale preference
+Verified live on Qwen — Eleanor Voss, after she switches cappuccino → matcha:
+  Majordomo (governed)   0 stale memories in recall    7 active rows
+  Append-only baseline   2 contradicted "cappuccino"   14 active rows
+                         memories still in recall
 ```
+
+The append-only agent makes every decision on a store full of contradicted,
+duplicated memories, with no audit trail — one weaker model or one ambiguous
+query away from acting on the stale fact. Majordomo retires the changed
+preference **with a recorded reason**, and keeps the recall window clean. The
+offline harness (`majordomo eval`, deterministic mock backend, runs in CI for
+zero API cost) reproduces the same pattern across sessions — see
+`data/accuracy_curve.png`.
 
 ## Stack
 
