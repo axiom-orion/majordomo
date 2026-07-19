@@ -56,10 +56,13 @@ Verified live on Qwen — Eleanor Voss, after she switches cappuccino → matcha
 The append-only agent makes every decision on a store full of contradicted,
 duplicated memories, with no audit trail — one weaker model or one ambiguous
 query away from acting on the stale fact. Majordomo retires the changed
-preference **with a recorded reason**, and keeps the recall window clean. The
-offline harness (`majordomo eval`, deterministic mock backend, runs in CI for
-zero API cost) reproduces the same pattern across sessions — see
-`data/accuracy_curve.png`.
+preference **with a recorded reason**, and keeps the recall window clean.
+
+![Governed vs append-only memory across sessions: stale-in-recall flat at zero for governed while append-only climbs; store size stays lean for governed while append-only grows](docs/eval-accuracy.png)
+
+*The offline harness (`majordomo eval`, deterministic mock backend — runs in CI
+for zero API cost) reproduces the same pattern across sessions; the headline
+numbers above are verified live on Qwen.*
 
 ## Stack
 
