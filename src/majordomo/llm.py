@@ -10,10 +10,17 @@ import hashlib
 import json
 import math
 import re
+import time
 
 import httpx
 
 from majordomo.config import settings
+
+# Transient failures worth retrying: network read/connect timeouts and the
+# server's own overload/ratelimit responses. A slow qwen3.7-max reasoning call
+# or a single 429 should not abort a whole eval — or a live demo mid-recording.
+_RETRY_STATUS = {429, 500, 502, 503, 504}
+_MAX_ATTEMPTS = 4
 
 _TOKEN = re.compile(r"[a-z]{3,}")
 _SUFFIXES = ("ically", "ally", "ies", "ing", "ely", "ed", "ly", "es", "ic", "s", "y")
@@ -62,8 +69,29 @@ class QwenClient:
         self._http = httpx.Client(
             base_url=settings.qwen_base_url,
             headers={"Authorization": f"Bearer {settings.qwen_api_key}"},
-            timeout=120.0,
+            timeout=180.0,
         )
+
+    def _post(self, path: str, body: dict) -> dict:
+        """POST with retry + exponential backoff on transient timeouts and
+        overload/ratelimit responses. Raises on the final attempt or on a
+        non-retryable status (e.g. 400/401/403)."""
+        last_exc: Exception | None = None
+        for attempt in range(_MAX_ATTEMPTS):
+            try:
+                r = self._http.post(path, json=body)
+                r.raise_for_status()
+                return r.json()
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code not in _RETRY_STATUS or attempt == _MAX_ATTEMPTS - 1:
+                    raise
+                last_exc = e
+            except (httpx.TimeoutException, httpx.TransportError) as e:
+                if attempt == _MAX_ATTEMPTS - 1:
+                    raise
+                last_exc = e
+            time.sleep(2.0 * (attempt + 1))  # 2s, 4s, 6s
+        raise last_exc  # unreachable, but keeps the type checker honest
 
     def chat(self, system: str, user: str, model: str | None = None,
              json_mode: bool = False) -> str:
@@ -76,20 +104,17 @@ class QwenClient:
         }
         if json_mode:
             body["response_format"] = {"type": "json_object"}
-        r = self._http.post("/chat/completions", json=body)
-        r.raise_for_status()
-        return r.json()["choices"][0]["message"]["content"]
+        return self._post("/chat/completions", body)["choices"][0]["message"]["content"]
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         out: list[list[float]] = []
         for i in range(0, len(texts), 10):  # DashScope embedding batch limit
-            r = self._http.post("/embeddings", json={
+            data = self._post("/embeddings", {
                 "model": settings.embed_model,
                 "input": texts[i:i + 10],
                 "dimensions": settings.embed_dim,
-            })
-            r.raise_for_status()
-            data = sorted(r.json()["data"], key=lambda d: d["index"])
+            })["data"]
+            data = sorted(data, key=lambda d: d["index"])
             out.extend(_normalize(d["embedding"]) for d in data)
         return out
 

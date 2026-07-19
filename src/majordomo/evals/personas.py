@@ -1,10 +1,20 @@
-"""Scripted guest personas for the cross-session accuracy evaluation.
+"""Scripted guest personas for the cross-session memory evaluation.
 
 Each persona is a sequence of sessions (scripted guest utterances) plus quiz
 questions with ground-truth answers. `answerable_from` marks the session index
-(1-based) at which the fact first appears; `updates` re-keys the expected
-answer when the guest CHANGES a preference in a later session — the case that
-separates governed memory from append-only memory.
+(1-based) at which the fact first appears; `updates` re-keys the expected answer
+when the guest CHANGES a preference in a later session.
+
+For updated preferences we also record ground-truth `stale_terms` (the concept
+that becomes outdated) and `current_terms` (what replaces it). The harness uses
+these to measure the real, on-track behaviour: does the agent's recall still
+surface the *superseded* fact ("timely forgetting of outdated information",
+"recalling critical memories within limited context windows") — governed memory
+retires it, append-only memory keeps leaking it into every decision.
+
+The third persona (Reyes) carries no contradiction; it demonstrates the track's
+"autonomously accumulates experience" ask — the agent learns a standing policy
+from a one-off incident and applies it on later stays.
 """
 
 PERSONAS = [
@@ -53,6 +63,8 @@ PERSONAS = [
                 "expect": "oat-milk cappuccino",
                 "answerable_from": 1,
                 "updates": {3: "matcha latte"},
+                "stale_terms": ["cappuccino"],
+                "current_terms": ["matcha"],
             },
         ],
     },
@@ -94,6 +106,42 @@ PERSONAS = [
                 "expect": "early gym before 5am",
                 "answerable_from": 1,
                 "updates": {3: "swimming pool lane hours"},
+                "stale_terms": ["gym"],
+                "current_terms": ["swim", "pool"],
+            },
+        ],
+    },
+    {
+        "guest_id": "g-reyes",
+        "name": "Marcus Reyes",
+        "sessions": [
+            [
+                "I need to flag something from last night — the front desk phoned my room at 6am about a package. Please make this a standing rule: never call my room before 9am, hold everything at the front desk.",
+                "Also, I take my coffee black, no sugar, ever.",
+            ],
+            [
+                "Back for two nights. Black coffee as usual, thank you.",
+                "A parcel may arrive for me tomorrow — you know what to do.",
+            ],
+            [
+                "One more for the record: I keep the room cool — please set it to 66 degrees before I arrive.",
+            ],
+        ],
+        "quiz": [
+            {
+                "q": "What is the standing rule for contacting this guest in the morning?",
+                "expect": "do not call the room before 9am, hold deliveries at the front desk",
+                "answerable_from": 1,
+            },
+            {
+                "q": "How does this guest take their coffee?",
+                "expect": "black, no sugar",
+                "answerable_from": 1,
+            },
+            {
+                "q": "What room temperature should be set before this guest arrives?",
+                "expect": "66 degrees",
+                "answerable_from": 3,
             },
         ],
     },

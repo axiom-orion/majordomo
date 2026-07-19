@@ -68,9 +68,19 @@ class MemoryEngine:
     def remember(self, guest_id: str, transcript: str, session_id: str) -> RememberReport:
         raw = self.client.chat(EXTRACT_SYSTEM, transcript, json_mode=True)
         try:
-            candidates = json.loads(raw).get("memories", [])
+            parsed = json.loads(raw)
         except json.JSONDecodeError:
+            parsed = None
+        # Real Qwen returns either {"memories": [...]} or a bare [...] array
+        # (the mock always used the wrapped form, so this only bites live).
+        if isinstance(parsed, dict):
+            candidates = parsed.get("memories", [])
+        elif isinstance(parsed, list):
+            candidates = parsed
+        else:
             candidates = []
+        # Drop malformed entries so downstream cand["content"] is always safe.
+        candidates = [c for c in candidates if isinstance(c, dict) and c.get("content")]
         report = RememberReport([], [], [])
         if not candidates:
             return report
@@ -125,9 +135,14 @@ class MemoryEngine:
         verdict = self.client.chat(
             CONTRADICTION_SYSTEM, f'OLD: "{old}"\nNEW: "{new}"', json_mode=True)
         try:
-            return bool(json.loads(verdict).get("contradicts", False))
+            parsed = json.loads(verdict)
         except json.JSONDecodeError:
             return False
+        if isinstance(parsed, dict):
+            return bool(parsed.get("contradicts", False))
+        if isinstance(parsed, bool):  # real Qwen may answer with a bare true/false
+            return parsed
+        return False
 
     # ---------------- recall ----------------
 

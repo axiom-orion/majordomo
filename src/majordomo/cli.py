@@ -76,14 +76,19 @@ def eval_cmd(no_chart):
     summary = run(chart=not no_chart)
     click.echo(json.dumps(
         {k: v for k, v in summary.items() if k != "results"}, indent=2))
+    click.echo("")
     for r in summary["results"]:
-        curve = [s["accuracy"] for s in r["per_session"]]
-        click.echo(f"{r['persona']:<16} {r['mode']:<9} accuracy by session: {curve} "
-                   f"(memory rows: {r['final_memory_rows']})")
+        stale = [s["stale_in_recall"] for s in r["per_session"]]
+        rows = [s["active_rows"] for s in r["per_session"]]
+        cov = [s["coverage_accuracy"] for s in r["per_session"]]
+        click.echo(f"{r['persona']:<16} {r['mode']:<9} "
+                   f"stale-in-recall {stale}  active-rows {rows}  coverage {cov}")
 
 
 @cli.command()
-def demo():
+@click.option("--persist", is_flag=True,
+              help="Write to the real memory db so `majordomo memory` can show the ledger after.")
+def demo(persist):
     """Scripted three-stay walkthrough of one guest (for the demo video)."""
     from pathlib import Path
 
@@ -93,7 +98,10 @@ def demo():
     from majordomo.store import MemoryStore
 
     persona = PERSONAS[0]
-    engine = MemoryEngine(store=MemoryStore(Path(":memory:")))
+    store = MemoryStore() if persist else MemoryStore(Path(":memory:"))
+    if persist:
+        store.wipe()  # fresh ledger each recording take
+    engine = MemoryEngine(store=store)
     for idx, utterances in enumerate(persona["sessions"], start=1):
         click.secho(f"\n=== Stay {idx}: {persona['name']} ===", bold=True)
         session = Session(persona["guest_id"], f"stay-{idx}", engine)

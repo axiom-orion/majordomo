@@ -1,6 +1,7 @@
 """Offline tests — mock backend, zero API keys. Cover the three governance
 paths (store / dedupe-reinforce / contradiction-supersede), recall ranking,
-and the end-to-end eval harness invariant (governed >= naive at final session)."""
+and the end-to-end eval harness invariant (governed leaks fewer stale memories
+into recall and keeps a leaner store than append-only after a change)."""
 
 import os
 from pathlib import Path
@@ -53,12 +54,18 @@ def test_naive_mode_accumulates_duplicates():
     assert len(e.store.active("g1")) == 2, "naive mode should append, not dedupe"
 
 
-def test_harness_governed_beats_or_ties_naive_at_end():
+def test_harness_governed_keeps_recall_clean_and_store_lean():
     persona = PERSONAS[0]
     governed = run_persona(persona, govern=True)
     naive = run_persona(persona, govern=False)
-    g_final = governed["per_session"][-1]["accuracy"]
-    n_final = naive["per_session"][-1]["accuracy"]
-    assert g_final is not None
-    assert g_final >= n_final, f"governed ({g_final}) should beat naive ({n_final}) after a preference change"
-    assert governed["per_session"][-1]["superseded"] >= 1, "stay 3 contains a preference change"
+    g_final = governed["per_session"][-1]
+    n_final = naive["per_session"][-1]
+
+    # Timely forgetting: after the stay-3 preference change, governed recall
+    # surfaces NO superseded memories; append-only leaks them.
+    assert g_final["stale_in_recall"] == 0, "governed recall must not surface the retired preference"
+    assert n_final["stale_in_recall"] >= 1, "append-only recall should still leak the stale preference"
+
+    # Efficient storage: governance keeps the active store strictly leaner.
+    assert g_final["active_rows"] < n_final["active_rows"]
+    assert g_final["superseded"] >= 1, "stay 3 contains a preference change"
