@@ -101,6 +101,10 @@ class QwenClient:
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
+            # qwen3.7-* are hybrid reasoning models; the concierge and governance
+            # steps don't need chain-of-thought. Disabling it cuts latency and
+            # token cost sharply (and avoids the slow-call timeouts).
+            "enable_thinking": False,
         }
         if json_mode:
             body["response_format"] = {"type": "json_object"}
